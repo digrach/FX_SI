@@ -145,6 +145,7 @@ public class TestOne {
 		assertEquals(465,ut.getSpaceship().getX(),0);
 	}
 
+
 	@Test
 	public void updateSpaceshipPositionWestEdge() {
 		Ut ut = new Ut();
@@ -152,6 +153,8 @@ public class TestOne {
 		ut.updateSpaceshipPosition("west");
 		assertEquals(0,ut.getSpaceship().getX(),0);
 	}
+
+
 
 	@Test
 	public void updateSpaceshipPositionWestTryToGoFurtherWest() {
@@ -193,13 +196,71 @@ public class TestOne {
 		assertEquals(187.5,ut.getAlienFleet()[len - 1].getY(),0);
 	}
 
+	@Test
+	public void testAssetSpacerWidth() {
+		Ut ut = new Ut();
+		assertEquals(125,ut.getAssetSpacerWidth(),0);
+	}
+
+	@Test
+	public void testAssetSpacerHeight() {
+		Ut ut = new Ut();
+		assertEquals(37.5,ut.getAssetSpacerHeight(),0);
+	}
+
+	@Test
+	public void testAlienXInitialPositionsAll() {
+		Ut ut = new Ut();
+
+		assertEquals(125,ut.getAlienFleet()[0].getX(),0);
+		assertEquals(300,ut.getAlienFleet()[1].getX(),0);
+		assertEquals(475,ut.getAlienFleet()[2].getX(),0);
+		assertEquals(650,ut.getAlienFleet()[3].getX(),0);
+		assertEquals(825,ut.getAlienFleet()[4].getX(),0);
+
+		assertEquals(125,ut.getAlienFleet()[5].getX(),0);
+		assertEquals(300,ut.getAlienFleet()[6].getX(),0);
+		assertEquals(475,ut.getAlienFleet()[7].getX(),0);
+		assertEquals(650,ut.getAlienFleet()[8].getX(),0);
+		assertEquals(825,ut.getAlienFleet()[9].getX(),0);
+
+		assertEquals(125,ut.getAlienFleet()[10].getX(),0);
+		assertEquals(300,ut.getAlienFleet()[11].getX(),0);
+		assertEquals(475,ut.getAlienFleet()[12].getX(),0);
+		assertEquals(650,ut.getAlienFleet()[13].getX(),0);
+		assertEquals(825,ut.getAlienFleet()[14].getX(),0);
+
+		assertEquals(37.5,ut.getAlienFleet()[0].getY(),0);
+		assertEquals(37.5,ut.getAlienFleet()[1].getY(),0);
+		assertEquals(37.5,ut.getAlienFleet()[2].getY(),0);
+		assertEquals(37.5,ut.getAlienFleet()[3].getY(),0);
+		assertEquals(37.5,ut.getAlienFleet()[4].getY(),0);
+
+		assertEquals(112.50,ut.getAlienFleet()[5].getY(),0);
+		assertEquals(112.50,ut.getAlienFleet()[6].getY(),0);
+		assertEquals(112.50,ut.getAlienFleet()[7].getY(),0);
+		assertEquals(112.50,ut.getAlienFleet()[8].getY(),0);
+		assertEquals(112.50,ut.getAlienFleet()[9].getY(),0);
+
+		assertEquals(187.50,ut.getAlienFleet()[10].getY(),0);
+		assertEquals(187.50,ut.getAlienFleet()[11].getY(),0);
+		assertEquals(187.50,ut.getAlienFleet()[12].getY(),0);
+		assertEquals(187.50,ut.getAlienFleet()[13].getY(),0);
+		assertEquals(187.50,ut.getAlienFleet()[14].getY(),0);
+
+		ut.updateAlienFleetPosition();
+		assertEquals(1,ut.getFleetTravelRate()*ut.makeAxisLength(ut.getCanvasStartX(), ut.getCanvasEndX()),0);
+		assertEquals(826,ut.getAlienFleet()[4].getX(),0);
+		assertEquals(37.5,ut.getAlienFleet()[4].getY(),0);
+	}
+
 	@Test 
 	public void updateAlienFleetPosition() {
 		System.out.println("\nTESTING updateAlienFleetPosition");
 
 		Ut ut = new Ut();
 		ut.updateAlienFleetPosition();
-		assertEquals(835.0,ut.getAlienFleet()[4].getX(),0);
+		assertEquals(826.0,ut.getAlienFleet()[4].getX(),0);
 	}
 
 	@Test
@@ -207,7 +268,7 @@ public class TestOne {
 		System.out.println("\nTESTING testAlienFleetTravelIncrement");
 
 		Ut ut = new Ut();
-		assertEquals(10.0,ut.getFleetTravelRate() * ut.makeAxisLength(ut.getCanvasStartX(), ut.getCanvasEndX()),0);
+		assertEquals(1,ut.getFleetTravelRate() * ut.makeAxisLength(ut.getCanvasStartX(), ut.getCanvasEndX()),0);
 	}
 
 	@Test 
@@ -239,10 +300,10 @@ public class TestOne {
 		System.out.println("\nTESTING updateAlienFleetPositionTestMovedSouth");
 
 		Ut ut = new Ut();
-		for (int x = 0; x < 13; x++) {
+		for (int x = 0; x < 175; x++) {
 			ut.updateAlienFleetPosition();
 		}
-		assertEquals(112.5,ut.getAlienFleet()[4].getY(),0);
+		assertEquals(56.25,ut.getAlienFleet()[4].getY(),0);
 
 	}
 
@@ -255,7 +316,7 @@ public class TestOne {
 		for (int x = 0; x < 20; x ++) {
 			ut.fireProjectile((Math.random() * 975), s.getY());
 		}
-		assertEquals(20,ut.getProjectiles().size());
+		assertEquals(20,ut.getSpceshipProjectiles().size());
 	}
 
 	@Test
@@ -263,7 +324,7 @@ public class TestOne {
 		System.out.println("\nTESTING testProjectileTravelIncrement");
 
 		Ut ut = new Ut();
-		assertEquals(5.0,ut.getProjectileTravelRate() * ut.makeAxisLength(ut.getCanvasStartY(), ut.getCanvasEndY()),0);
+		assertEquals(15,ut.getProjectileTravelRate() * ut.makeAxisLength(ut.getCanvasStartY(), ut.getCanvasEndY()),0);
 	}
 
 	@Test
@@ -274,44 +335,46 @@ public class TestOne {
 		for (int x = 0; x < 1; x ++) {
 			ut.fireProjectile((Math.random() * 975), (Math.random() * 300));
 		}
-		
+
 		for (int x = 0; x < 100; x ++) {
 			ut.updateProjectilePostion();
-			for (Projectile p: ut.getProjectiles()) {
+			for (Projectile p: ut.getSpceshipProjectiles()) {
 				System.out.println(p.getX() + " " + p.getY());
 				assertTrue(p.getY() > 0);
 			}
 		}
+
 	}
 
 	@Test
 	public void c1() {
-		System.out.println("\nTESTING c1");
-
+		System.out.println("\nTESTING alien collision");
+		
 		Ut ut = new Ut();
+		
+		assertEquals(15,ut.getProjectileTravelRate()*ut.makeAxisLength(ut.getCanvasStartY(), ut.getCanvasEndY()),0);
 
-		for (int x = 0; x < 1000; x ++) {
-			ut.fireProjectile((Math.random() * 975), (Math.random() * 425));
-		}
+		
+		assertEquals(425,ut.getSpaceship().getY(),0);
+		
+		ut.fireProjectile(1, 425);
+		
+		assertEquals(426,ut.getSpceshipProjectiles().get(0).getY(),0);
+		
+		ut.updateProjectilePostion();
+		
+		assertEquals(426 - 15,ut.getSpceshipProjectiles().get(0).getY(),0);
+		
+		ut.fireProjectile(125, 37.5);
+		assertEquals(true,ut.detectProjectileCollisionWithAlien(ut.getAlienFleet()[0]));
+		ut.fireProjectile(176, 37.5);
+		assertEquals(false,ut.detectProjectileCollisionWithAlien(ut.getAlienFleet()[0]));
+		ut.fireProjectile(175, 37.5);
+		assertEquals(true,ut.detectProjectileCollisionWithAlien(ut.getAlienFleet()[0]));
 
-		for (int x = 0; x < 85; x ++) {
-			ut.updateAlienFleetPosition();
-			ut.updateProjectilePostion();
-		}
+		
 
-		int count = 0;
-		for (Alien a : ut.getAlienFleet()) {
-			if (a != null) {
-				count ++;
-				//System.out.println("Alien coords: " + a.getX() + " " + a.getY());
-			}
-		}
-
-		for (Projectile p : ut.getProjectiles()) {
-			//System.out.println("Projectile coords: " + p.getX() + " " + p.getY());
-		}
-
-		System.out.println("Num of not null Aliens: " + count);
-		System.out.println("getProjectiles().size() " + ut.getProjectiles().size());
 	}
+
+
 }

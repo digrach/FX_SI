@@ -1,13 +1,10 @@
 package application;
 
-import java.net.URL;
 import java.util.List;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.beans.InvalidationListener;
-import javafx.beans.Observable;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -39,7 +36,9 @@ import javafx.geometry.Pos;
 
 public class Main extends Application{// implements ChangeListener<Integer>, InvalidationListener {
 
-	Ut ut = new Ut();
+	double width = 1000, height = 500, buffer = 0;
+	//double width = 500, height = 250, buffer = 0;
+	Ut ut = new Ut(width,height,buffer);
 	FlowPane root;
 	Scene scene;
 	GraphicsContext gc;
@@ -47,13 +46,16 @@ public class Main extends Application{// implements ChangeListener<Integer>, Inv
 	AnimationTimer timer;
 	int countdown = 50;
 
-	final URL shootSound = getClass().getResource("laser.mp3");
-	final AudioClip shootClip = new AudioClip(shootSound.toString());
-
-	final URL explosionSound = getClass().getResource("explosion.mp3");
-	final AudioClip explosionClip = new AudioClip(explosionSound.toString());
-
-
+	AudioClip shootClip = new AudioClip(ut.getShootSound().toString());
+	AudioClip explosionClip = new AudioClip(ut.getExplosionSound().toString());
+	AudioClip endGameClip = new AudioClip(ut.getEndGameSound().toString());
+	AudioClip alienProjectileSoundClip = new AudioClip(ut.getAlienProjectileSound().toString());
+	
+	final BooleanProperty spacePressed = new SimpleBooleanProperty(false);
+	final BooleanProperty rightPressed = new SimpleBooleanProperty(false);
+	final BooleanProperty leftPressed = new SimpleBooleanProperty(false);
+	final BooleanBinding spaceAndRightPressed = spacePressed.and(rightPressed);
+	final BooleanBinding spaceAndLeftPressed = spacePressed.and(leftPressed);
 
 	@Override
 	public void start(Stage primaryStage) {
@@ -65,11 +67,8 @@ public class Main extends Application{// implements ChangeListener<Integer>, Inv
 			canvas.setWidth(ut.getCanvasWidth());
 			canvas.setHeight(ut.getCanvasHeight());
 			gc = canvas.getGraphicsContext2D();
-			
-			drawAliens();
-			drawSpaceship();
-			addHandlers();
-			startTimer();
+
+			preGameInit();
 
 			primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
 				public void handle(WindowEvent we) {
@@ -82,13 +81,30 @@ public class Main extends Application{// implements ChangeListener<Integer>, Inv
 			scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 			primaryStage.setScene(scene);
 			primaryStage.show();
+
+			startScreen();
+
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
 	}
 
+	public void preGameInit() {
+		gc.setFill(Color.BLACK);
+		gc.fillRect(0, 0, ut.getCanvasWidth(), ut.getCanvasHeight());
+		drawAliens();
+		drawSpaceship();
+		drawScore();
+		drawMenu();
+		addHandlers();
+	}
+
 	public void restart() {
-		ut = new Ut();
+		endGameClip.stop();
+		rightPressed.set(false);
+		leftPressed.set(false);
+
+		ut = new Ut(width,height,buffer);
 		drawAliens();
 		drawSpaceship();
 		addHandlers();
@@ -99,16 +115,27 @@ public class Main extends Application{// implements ChangeListener<Integer>, Inv
 		timer = new AnimationTimer() {
 			@Override
 			public void handle(long now) {
-
 				gc.setFill(Color.BLACK);
 				gc.fillRect(0, 0, ut.getCanvasWidth(), ut.getCanvasHeight());
 
 				ut.doGameLoop();
 				drawOnCanvas();
+				
+				if (rightPressed.getValue()) {
+					ut.moveSpaceShip("east");
+				}
+				if (leftPressed.getValue()) {
+					ut.moveSpaceShip("west");
+				}
+				if (spacePressed.getValue()) {
+					ut.Shoot(System.currentTimeMillis());
+					//shootClip.play();
+				}
 
 				if (countdown == 0){
-					countdown = 100;
+					countdown = (int) (100 + (Math.random() * 50));
 					ut.dropProjectile();
+					alienProjectileSoundClip.play();
 				}
 				countdown --;
 			}
@@ -125,10 +152,103 @@ public class Main extends Application{// implements ChangeListener<Integer>, Inv
 		drawMenu();
 	}
 
+	public void startScreen() {
+		final Stage dialog = new Stage();
+		dialog.initStyle(StageStyle.UNDECORATED);
+		dialog.setOpacity(.9);
+		dialog.initModality(Modality.WINDOW_MODAL);
+
+		VBox vb = new VBox();
+		vb.setPadding(new Insets(10));
+		vb.setSpacing(8);
+		vb.setAlignment(Pos.CENTER);
+
+		Text title = new Text("Invade my space!");
+		title.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+		title.setFill(Color.CHARTREUSE);
+		vb.getChildren().add(title);
+
+		Label lblYourScoreLabel = new Label("Choose your destiny!");
+		lblYourScoreLabel.setFont(new Font("Arial", 30));
+		lblYourScoreLabel.setTextFill(Color.CHARTREUSE);
+
+		VBox.setMargin(lblYourScoreLabel, new Insets(0, 0, 0, 8));
+		vb.getChildren().add(lblYourScoreLabel);
+
+		Button btnPlay = new Button();
+		btnPlay.setText("Play");
+		btnPlay.setFont(new Font("Arial", 25));
+
+		btnPlay.setOnAction(new EventHandler<ActionEvent>() {
+			public void handle(ActionEvent event) {
+				//restart();
+				dialog.close();
+				startTimer();
+			}
+		});
+
+		//VBox.setMargin(lblYourScoreLabel, new Insets(0, 0, 0, 8));
+		vb.getChildren().add(btnPlay);
+
+		Button btnExit = new Button();
+		btnExit.setText("Exit");
+		btnExit.setFont(new Font("Arial", 25));
+
+		btnExit.setOnAction(new EventHandler<ActionEvent>() {
+			public void handle(ActionEvent event) {
+				Platform.exit();
+			}
+		});
+
+		//VBox.setMargin(lblYourScoreLabel, new Insets(0, 0, 0, 8));
+		vb.getChildren().add(btnExit);
+
+		Scene dialogScene = new Scene(vb,ut.getCanvasWidth() / 3,ut.getCanvasHeight() / 3);
+
+		// Capture space keypress as it is happening to prevent
+		// default behaviour.
+		dialogScene.addEventFilter( KeyEvent.KEY_PRESSED, new EventHandler<KeyEvent>() {
+			@Override
+			public void handle(KeyEvent event) {
+
+				if (event.getEventType() == KeyEvent.KEY_PRESSED){
+					// Consume Event before Bubbling Phase
+					if ( event.getCode() == KeyCode.SPACE ){ 
+						event.consume();
+					}
+				}
+			}
+		});
+
+		dialogScene.setOnKeyPressed(new EventHandler<KeyEvent>() {
+
+			@Override
+			public void handle(KeyEvent arg0) {
+				if (arg0.getCode() == KeyCode.X) {
+					Platform.exit();
+				}
+				if (arg0.getCode() == KeyCode.P) {
+					startTimer();
+					endGameClip.stop();
+					dialog.close();
+				}
+			}
+
+		});
+
+		dialogScene.setFill(Color.rgb(0, 0, 0, 1));
+		dialog.setScene(dialogScene);
+		dialog.show();
+		endGameClip.play();
+	}
+
 	public void gameOver() {
 		timer.stop();
 		shootClip.stop();
 		explosionClip.stop();
+		alienProjectileSoundClip.stop();
+		endGameClip.play();
+		
 
 		final Stage dialog = new Stage();
 		dialog.initStyle(StageStyle.UNDECORATED);
@@ -140,7 +260,7 @@ public class Main extends Application{// implements ChangeListener<Integer>, Inv
 		vb.setSpacing(8);
 		vb.setAlignment(Pos.CENTER);
 
-		Text title = new Text("Game Over!");
+		Text title = new Text("Game Over FOOL!");
 		title.setFont(Font.font("Arial", FontWeight.BOLD, 14));
 		title.setFill(Color.CHARTREUSE);
 		vb.getChildren().add(title);
@@ -151,8 +271,6 @@ public class Main extends Application{// implements ChangeListener<Integer>, Inv
 
 		VBox.setMargin(lblYourScoreLabel, new Insets(0, 0, 0, 8));
 		vb.getChildren().add(lblYourScoreLabel);
-
-		
 
 		Button btnPlayAgain = new Button();
 		btnPlayAgain.setText("Play again");
@@ -167,7 +285,7 @@ public class Main extends Application{// implements ChangeListener<Integer>, Inv
 
 		VBox.setMargin(lblYourScoreLabel, new Insets(0, 0, 0, 8));
 		vb.getChildren().add(btnPlayAgain);
-		
+
 		Button btnExit = new Button();
 		btnExit.setText("Exit");
 		btnExit.setFont(new Font("Arial", 25));
@@ -182,22 +300,22 @@ public class Main extends Application{// implements ChangeListener<Integer>, Inv
 		vb.getChildren().add(btnExit);
 
 		Scene dialogScene = new Scene(vb,ut.getCanvasWidth() / 3,ut.getCanvasHeight() / 3);
-		
+
 		// Capture space keypress as it is happening to prevent
 		// default behaviour.
 		dialogScene.addEventFilter( KeyEvent.KEY_PRESSED, new EventHandler<KeyEvent>() {
-		    @Override
-		    public void handle(KeyEvent event) {
+			@Override
+			public void handle(KeyEvent event) {
 
-		        if (event.getEventType() == KeyEvent.KEY_PRESSED){
-		            // Consume Event before Bubbling Phase
-		            if ( event.getCode() == KeyCode.SPACE ){ 
-		                event.consume();
-		            }
-		        }
-		        }
-		    });
-		
+				if (event.getEventType() == KeyEvent.KEY_PRESSED){
+					// Consume Event before Bubbling Phase
+					if ( event.getCode() == KeyCode.SPACE ){ 
+						event.consume();
+					}
+				}
+			}
+		});
+
 		dialogScene.setOnKeyPressed(new EventHandler<KeyEvent>() {
 
 			@Override
@@ -210,21 +328,18 @@ public class Main extends Application{// implements ChangeListener<Integer>, Inv
 					dialog.close();
 				}
 			}
-			
+
 		});
 
 		dialogScene.setFill(Color.rgb(0, 0, 0, 1));
 		dialog.setScene(dialogScene);
 		dialog.show();
+		
 	}
 
 	public void addHandlers() {
 
-		final BooleanProperty spacePressed = new SimpleBooleanProperty(false);
-		final BooleanProperty rightPressed = new SimpleBooleanProperty(false);
-		final BooleanProperty leftPressed = new SimpleBooleanProperty(false);
-		final BooleanBinding spaceAndRightPressed = spacePressed.and(rightPressed);
-		final BooleanBinding spaceAndLeftPressed = spacePressed.and(leftPressed);
+		
 
 
 		ut.oScore.addListener(new ChangeListener<Number>(){
@@ -245,64 +360,69 @@ public class Main extends Application{// implements ChangeListener<Integer>, Inv
 				}
 			}
 		});
-
-		rightPressed.addListener(new ChangeListener<Boolean>() {
+		
+		ut.oShot.addListener(new ChangeListener<Boolean>(){
 			@Override
 			public void changed(ObservableValue<? extends Boolean> observable,
 					Boolean oldValue, Boolean newValue) {
-				if (newValue) {
-					ut.moveSpaceShip("east");
+				if (newValue == true) {
+					shootClip.play();				
 				}
 			}
 		});
 
-
-		leftPressed.addListener(new ChangeListener<Boolean>() {
-			@Override
-			public void changed(ObservableValue<? extends Boolean> observable,
-					Boolean oldValue, Boolean newValue) {
-				if (newValue) {
-					ut.moveSpaceShip("west");
-				}
-			}
-		});
-
-
-
-
-		spacePressed.addListener(new ChangeListener<Boolean>() {
-			@Override
-			public void changed(ObservableValue<? extends Boolean> observable,
-					Boolean oldValue, Boolean newValue) {
-				if (newValue) {
-					ut.Shoot(System.currentTimeMillis());
-					shootClip.play();
-					System.out.println("SPACE");
-				}
-			}
-		});
-
-		spaceAndRightPressed.addListener(new ChangeListener<Boolean>() {
-			@Override
-			public void changed(ObservableValue<? extends Boolean> observable,
-					Boolean oldValue, Boolean newValue) {
-				if (newValue) {
-					ut.moveSpaceShip("east");
-					ut.Shoot(System.currentTimeMillis());
-				}
-			}
-		});
-
-		spaceAndLeftPressed.addListener(new ChangeListener<Boolean>() {
-			@Override
-			public void changed(ObservableValue<? extends Boolean> observable,
-					Boolean oldValue, Boolean newValue) {
-				if (newValue) {
-					ut.moveSpaceShip("west");
-					ut.Shoot(System.currentTimeMillis());
-				}
-			}
-		});
+//		rightPressed.addListener(new ChangeListener<Boolean>() {
+//			@Override
+//			public void changed(ObservableValue<? extends Boolean> observable,
+//					Boolean oldValue, Boolean newValue) {
+//				if (newValue) {
+//					//ut.moveSpaceShip("east");
+//				}
+//			}
+//		});
+//
+//		leftPressed.addListener(new ChangeListener<Boolean>() {
+//			@Override
+//			public void changed(ObservableValue<? extends Boolean> observable,
+//					Boolean oldValue, Boolean newValue) {
+//				if (newValue) {
+//					//ut.moveSpaceShip("west");
+//				}
+//			}
+//		});
+//
+//		spacePressed.addListener(new ChangeListener<Boolean>() {
+//			@Override
+//			public void changed(ObservableValue<? extends Boolean> observable,
+//					Boolean oldValue, Boolean newValue) {
+//				if (newValue) {
+////					ut.Shoot(System.currentTimeMillis());
+////					shootClip.play();
+//				}
+//			}
+//		});
+//
+//		spaceAndRightPressed.addListener(new ChangeListener<Boolean>() {
+//			@Override
+//			public void changed(ObservableValue<? extends Boolean> observable,
+//					Boolean oldValue, Boolean newValue) {
+//				if (newValue) {
+//					ut.moveSpaceShip("east");
+//					ut.Shoot(System.currentTimeMillis());
+//				}
+//			}
+//		});
+//
+//		spaceAndLeftPressed.addListener(new ChangeListener<Boolean>() {
+//			@Override
+//			public void changed(ObservableValue<? extends Boolean> observable,
+//					Boolean oldValue, Boolean newValue) {
+//				if (newValue) {
+//					ut.moveSpaceShip("west");
+//					ut.Shoot(System.currentTimeMillis());
+//				}
+//			}
+//		});
 
 		scene.setOnKeyPressed(new EventHandler<KeyEvent>() {
 			@Override
@@ -314,7 +434,7 @@ public class Main extends Application{// implements ChangeListener<Integer>, Inv
 				} else if (ke.getCode() == KeyCode.LEFT) {
 					leftPressed.set(true);
 				} else if (ke.getCode() == KeyCode.X) {
-					Platform.exit();
+					gameOver();
 				} 
 			}
 		});
@@ -352,7 +472,7 @@ public class Main extends Application{// implements ChangeListener<Integer>, Inv
 
 	public void drawProjectiles() {
 		gc.setFill(Color.RED);
-		List<Projectile> projectiles = ut.getProjectiles();
+		List<Projectile> projectiles = ut.getSpceshipProjectiles();
 		for (Projectile p : projectiles) {
 			gc.fillRect(p.getX(), p.getY(), p.getWidth(), p.getHeight());
 		}
